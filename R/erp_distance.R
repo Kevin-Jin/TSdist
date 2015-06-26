@@ -1,5 +1,5 @@
 
-erpDistance <- function(x, y, g, sigma){
+erpDistance <- function(x, y, g, sigma, lead.lag.info = FALSE){
   
   if (class(try(erpInitialCheck(x, y, g, sigma)))=="try-error"){
     return(NA)
@@ -15,6 +15,12 @@ erpDistance <- function(x, y, g, sigma){
   #The cost matrix is initialized and converted into a vector
   costMatrix <- c(1:((tamx+1) * (tamy+1))) * 0 + (max(distMatrix) * 
                                                 length(distMatrix))
+  pathMatrix <- rep(0, (tamx+1) * (tamy+1))
+  #Benefit of keeping track of both gap measures is that we can determine the
+  #length of the optimized path by using only xGaps(length(xGaps)),
+  #yGaps(length(yGaps)), and tamy or tamx
+  xGaps <- rep(0, (tamx+1) * (tamy+1))
+  yGaps <- rep(0, (tamx+1) * (tamy+1))
 
   
   #The case with no temporal constraint
@@ -22,22 +28,32 @@ erpDistance <- function(x, y, g, sigma){
     #The cost matrix is computed using dynammic programming.
     resultList<-.C("erpnw", as.double(x), as.double(y), as.integer(tamx),
                    as.integer(tamy), as.double(costMatrix), 
-                   as.double(distMatrix), as.double(g))
+                   as.double(distMatrix), as.integer(pathMatrix), as.integer(xGaps), as.integer(yGaps), as.double(g))
     costMatrix<-resultList[[5]]
+    pathMatrix<-resultList[[7]]
+    xGaps<-resultList[[8]]
+    yGaps <- resultList[[9]]
     
     #The case with a temporal constraint
   } else {
     #The cost matrix is computed using dynammic programming.
     resultList<-.C("erp", as.double(x), as.double(y), as.integer(tamx),
                    as.integer(tamy), as.integer(sigma),as.double(costMatrix), 
-                   as.double(distMatrix), as.double(g))
+                   as.double(distMatrix), as.integer(pathMatrix), as.integer(xGaps), as.integer(yGaps), as.double(g))
     costMatrix <- resultList[[6]]
+    pathMatrix <- resultList[[8]]
+    xGaps <- resultList[[9]]
+    yGaps <- resultList[[10]]
   }
 
   #The last position of the cost matrix is returned as the distance between 
   #the series.
   d<-costMatrix[length(costMatrix)]
-  return(d)
+  if (!lead.lag.info) {
+    return(d)
+  } else {
+    return(list(distance = d, lead.lags = .Call("ts_xLeadOverY", as.integer(tamx), as.integer(tamy), as.integer(pathMatrix), as.integer(xGaps), as.integer(yGaps), package = "TSdist")))
+  }
   }
 }
 
