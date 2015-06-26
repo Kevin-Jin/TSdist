@@ -42,7 +42,7 @@ inf.normDistance,stsDistance, tquestDistance,acfDistance, pacfDistance,
 ar.lpc.cepsDistance, ar.mahDistance, ar.picDistance, cdmDistance, cidDistance, 
 corDistance, cortDistance, wavDistance, int.perDistance, perDistance, 
 mindist.saxDistance, ncdDistance, predDistance, spec.glkDistance, spec.isdDistance,
-spec.llrDistance, frechetDistance, pdcDistance)
+spec.llrDistance, frechetDistance, pdcDistance, barycenter.average, erp.barycenter.average)
 
 
 #Export wrapper function for time series objects.

@@ -6,7 +6,7 @@
 
 SEXP ts_xLeadOverY(SEXP tamx, SEXP tamy, SEXP pathMatrixVec, SEXP xGapsVec, SEXP yGapsVec) {
 	int i, j, k, tam1, tam2, pathLen, *pathMatrix, *xGaps, *yGaps;
-	SEXP xLeadOverY, xLeads, yLeads, result, resultNames;
+	SEXP xLeadOverY, fullPath, xLeads, yLeads, result, resultNames;
 	
 	pathMatrix = INTEGER(pathMatrixVec);
 	xGaps = INTEGER(xGapsVec);
@@ -25,10 +25,11 @@ SEXP ts_xLeadOverY(SEXP tamx, SEXP tamy, SEXP pathMatrixVec, SEXP xGapsVec, SEXP
 		+ ELT(yGaps, tam2, i, j)					//number of PATH_Y_GAPS on optimal path
 	;
 	PROTECT(xLeadOverY = allocVector(INTSXP, pathLen));
+	PROTECT(fullPath = allocMatrix(INTSXP, 2, pathLen));
 	PROTECT(xLeads = allocVector(INTSXP, tam1));
 	PROTECT(yLeads = allocVector(INTSXP, tam2));
-	PROTECT(result = allocVector(VECSXP, 3));
-	PROTECT(resultNames = allocVector(STRSXP, 3));
+	PROTECT(result = allocVector(VECSXP, 4));
+	PROTECT(resultNames = allocVector(STRSXP, 4));
 	for (k = pathLen - 1; k >= 0; --k)
 		INTEGER(xLeadOverY)[k] = NA_INTEGER;
 	for (k = tam1 - 1; k >= 0; --k)
@@ -40,6 +41,8 @@ SEXP ts_xLeadOverY(SEXP tamx, SEXP tamy, SEXP pathMatrixVec, SEXP xGapsVec, SEXP
 	while (i >= 0 && j >= 0 && pathLen > 0) {
 		pathLen--;
 		INTEGER(xLeadOverY)[pathLen] = ELT(xGaps, tam2, i, j) - ELT(yGaps, tam2, i, j);
+		ELT(INTEGER(fullPath), 2, pathLen, 0) = i;
+		ELT(INTEGER(fullPath), 2, pathLen, 1) = j;
 		if (INTEGER(xLeads)[i] == NA_INTEGER || INTEGER(yLeads)[j] == NA_INTEGER) {
 			error("reconstruct_path: assertion failed. xLeads[i] or yLeads[j] is NA");
 			goto end;
@@ -72,13 +75,15 @@ SEXP ts_xLeadOverY(SEXP tamx, SEXP tamy, SEXP pathMatrixVec, SEXP xGapsVec, SEXP
 	
 end:
 	SET_VECTOR_ELT(result, 0, xLeadOverY);
-	SET_VECTOR_ELT(result, 1, xLeads);
-	SET_VECTOR_ELT(result, 2, yLeads);
+	SET_VECTOR_ELT(result, 1, fullPath);
+	SET_VECTOR_ELT(result, 2, xLeads);
+	SET_VECTOR_ELT(result, 3, yLeads);
 	SET_STRING_ELT(resultNames, 0, mkChar("x.cumulative.lead"));
-	SET_STRING_ELT(resultNames, 1, mkChar("x.leads"));
-	SET_STRING_ELT(resultNames, 2, mkChar("y.leads"));
+	SET_STRING_ELT(resultNames, 1, mkChar("full.path"));
+	SET_STRING_ELT(resultNames, 2, mkChar("x.leads"));
+	SET_STRING_ELT(resultNames, 3, mkChar("y.leads"));
 	setAttrib(result, R_NamesSymbol, resultNames);
-	UNPROTECT(5);
+	UNPROTECT(6);
 	return result;
 }
 
