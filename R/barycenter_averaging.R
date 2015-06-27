@@ -24,21 +24,40 @@ barycenter.average <- function(sequences, initial = median.series(sequences), di
   
   repeat {
     paths <- lapply(sequences, function(series) list(series = series, path = tsDistances(average, series, distance = distance, lead.lag.info = TRUE, ...)[["full.path"]]))
-    # a sample on the new average is simply the arithmetic mean of the samples,
-    # from sequences, matched to the point on the old average
-    sumPoints <- rep(0, length(average))
-    nPoints <- rep(0, length(average))
-    for (seriesAndPath in paths) {
+    
+    # each sample on the new average is simply the arithmetic mean of all samples
+    # that are "matched" (by time warping) to the sample on the old average with
+    # the corresponding timestamp
+    individualSeriesMatches <- lapply(paths, function(seriesAndPath) {
+      thisSeries <- seriesAndPath[["series"]]
       path <- seriesAndPath[["path"]]
-      path <- path[, path[1, ] != 0 & path[2, ] != 0]
-      series <- seriesAndPath[["series"]]
-      for (coordinate in split(path, col(path))) {
-        sumPoints[coordinate[1]] <- sumPoints[coordinate[1]] + series[coordinate[2]]
-        nPoints[coordinate[1]] <- nPoints[coordinate[1]] + 1
-      }
-    }
-    # calculate our centroid (barycenter)
-    average <- sumPoints / nPoints
+      # name the rows so code below looks a little more sane
+      rownames(path) <- c("Timestamp.On.Avg", "Timestamp.On.ThisSeries")
+      
+      # 0 indicates that a point wasn't matched from average series or thisSeries
+      # to the other series, so just ignore matchings with timestamp index of 0
+      path <- path[, path["Timestamp.On.Avg", ] != 0 & path["Timestamp.On.ThisSeries", ] != 0]
+      
+      # creates a numeric matrix: first column is some timestamp index on average series to find matches on,
+      # second column is sum of sample values matched on thisSeries to the corresponding average series sample,
+      # third column is number of samples on thisSeries matched to the corresponding average series sample
+      thisSeriesMatches <- as.matrix(do.call(data.frame, aggregate(x = path["Timestamp.On.ThisSeries", ], by = list(path["Timestamp.On.Avg", ]), function(Matched.Timestamps.On.ThisSeries)
+        c(sum(thisSeries[Matched.Timestamps.On.ThisSeries]), length(Matched.Timestamps.On.ThisSeries))
+      )))
+      colnames(thisSeriesMatches) <- c("Timestamp.On.Avg", "Sum.Matched.Samples", "Num.Matched.Samples")
+      thisSeriesMatches
+    })
+    initialSumAndNum <- list(matrix(0, nrow = length(average), ncol = 2))
+    combinedSamples <- Reduce(function(accSeries, addSeries) {
+      # ensure addSeries has the correct length and timestamps are in the correct order
+      addSeries <- addSeries[match(1:nrow(accSeries), addSeries[, "Timestamp.On.Avg"]), c("Sum.Matched.Samples", "Num.Matched.Samples")]
+      
+      # use 0s where addSeries is missing matches to average series
+      addSeries[is.na(addSeries)] <- 0
+      accSeries + addSeries
+    }, c(initialSumAndNum, individualSeriesMatches))
+    # once sum(x) and num(x) is found, we can calculate our new average series!
+    average <- combinedSamples[, "Sum.Matched.Samples"] / combinedSamples[, "Num.Matched.Samples"]
     
     # if Euclidean distance reaches equilibrium, then stop
     prevTotalDist <- totalDist
