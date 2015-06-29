@@ -1,3 +1,8 @@
+which.min.last <- function(x) {
+  z <- which(x == min(x));
+  z[length(z)]
+}
+
 median.series <- function(sequences) {
   # first detrend each series
   detrended <- lapply(sequences, function(series) {
@@ -12,12 +17,12 @@ median.series <- function(sequences) {
   globalMinLocations <- unlist(lapply(detrended, which.min))
   
   # pick the series whose extremes are the closest to the median extremes
-  return(sequences[[which.min(apply(cbind(min = globalMinLocations, max = globalMaxLocations), 1, function(seriesExtremes) {
-    (seriesExtremes["min"] - median(globalMinLocations)) ^ 2 + (seriesExtremes["max"] - median(globalMaxLocations)) ^ 2
+  return(sequences[[which.min.last(apply(cbind(min = globalMinLocations, max = globalMaxLocations), 1, function(seriesExtremes) {
+    (seriesExtremes["min"] - trunc(median(globalMinLocations))) ^ 2 + (seriesExtremes["max"] - trunc(median(globalMaxLocations))) ^ 2
   }))]])
 }
 
-barycenter.average <- function(sequences, initial = median.series(sequences), distance = "dtw", maxIterations = 100, ...) {
+stationary.barycenter.average <- function(sequences, initial = median.series(sequences), distance = "dtw", maxIterations = 100, ...) {
   average <- initial
   totalDist <- -1
   iteration <- 0
@@ -71,6 +76,33 @@ barycenter.average <- function(sequences, initial = median.series(sequences), di
   return(average)
 }
 
-erp.barycenter.average <- function(sequences) {
-  barycenter.average(sequences, distance = "erp", g = 0)
+# set order.of.integration to 0 if all series are already stationary.
+# set order.of.integration to -1 to calculate optimal order.of.integration.
+barycenter.average <- function(sequences, order.of.integration = -1, ...) {
+  sequences = as.matrix(as.data.frame(sequences))
+  
+  if (order.of.integration < 0) {
+    # note: order.of.integration can be fractional as a result of using mean
+    order.of.integration <- mean(apply(sequences, 2, ndiffs))
+  }
+  # we will only permit integral orders of integration so that we can simply use diff and diffinv
+  order.of.integration <- ceiling(order.of.integration)
+  
+  if (order.of.integration > 0) {
+    toSkip <- ceiling(order.of.integration)
+    # for the first n elements lost as a result of getting the n difference,
+    # just grab the first n elements of each series and average the series values
+    # TODO: find a better way
+    xi <- apply(matrix(sequences[1:toSkip, ], nrow = toSkip), 1, mean)
+    sequences <- diff(sequences, differences = order.of.integration)
+  }
+  average <- stationary.barycenter.average(split(sequences, col(sequences)), ...)
+  if (order.of.integration > 0) {
+    average <- diffinv(average, differences = order.of.integration, xi = xi)
+  }
+  average
+}
+
+dtw.barycenter.average <- function(sequences, order.of.integration = 0, ...) {
+  barycenter.average(sequences, order.of.integration, distance = "dtw", step.pattern = symmetric1, ...)
 }
