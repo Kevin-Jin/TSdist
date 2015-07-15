@@ -52,7 +52,7 @@ erpDistance <- function(x, y, g, sigma, lead.lag.info = FALSE){
   if (!lead.lag.info) {
     return(d)
   } else {
-    return(augment.results(c(distance = d, .Call("ts_xLeadOverY", as.integer(tamx), as.integer(tamy), as.integer(pathMatrix), as.integer(xGaps), as.integer(yGaps), package = "TSdist")), tamx, tamy))
+    return(augment.results(c(distance = d, .Call("ts_xLeadOverY", as.integer(tamx), as.integer(tamy), as.integer(pathMatrix), as.integer(xGaps), as.integer(yGaps), package = "TSdist")), x, y))
   }
   }
 }

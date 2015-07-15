@@ -1,5 +1,5 @@
 # implement this in path_info.c if R performance is too poor
-append.path.info <- function(tamx, tamy, dtw) {
+append.path.info <- function(x, y, dtw) {
   # for consistency with x.leads and y.leads of ERP distance,
   # we leave x.leads[1] == y.leads[1] == 0. Unlike ERP distance,
   # DTW distance must start on index 1 of both time series and
@@ -7,8 +7,8 @@ append.path.info <- function(tamx, tamy, dtw) {
   # sake of minimizing distances.
   i <- 2
   j <- 2
-  x.leads <- numeric(tamx + 1)
-  y.leads <- numeric(tamy + 1)
+  x.leads <- numeric(length(x) + 1)
+  y.leads <- numeric(length(y) + 1)
   # impossible to leave any time series out, so index on either
   # time series can never be 0
   x.leads[1] <- y.leads[1] <- 0
@@ -34,14 +34,14 @@ append.path.info <- function(tamx, tamy, dtw) {
     }
   }
   full.path <- cbind(x = dtw$index1, y = dtw$index2)
-  augment.results(list(distance = dtw$distance, full.path = full.path, x.leads = x.leads, y.leads = y.leads), tamx, tamy)
+  augment.results(list(distance = dtw$distance, full.path = full.path, x.leads = x.leads, y.leads = y.leads), x, y)
 }
 
 #Dynamic time warping distance is calculated by using dtw package
 dtwDistance <- function(x, y, lead.lag.info = FALSE, ...){
   tryCatch({
     if (lead.lag.info)
-      append.path.info(length(x), length(y), dtw(x, y, distance.only = FALSE, ...))
+      append.path.info(x, y, dtw(x, y, distance.only = FALSE, ...))
     else
       dtw(x, y, distance.only = TRUE, ...)$distance
   },
