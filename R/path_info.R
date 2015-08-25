@@ -58,8 +58,10 @@ goodness <- function(matched) {
   list(y.by.x.cor = y.by.x.cor, x.by.y.cor = x.by.y.cor, expanded.cor = expanded.cor)
 }
 
-augment.results <- function(result, x, y) {
+augment.results <- function(distance, result, x, y) {
   cum.leads <- cumulative.leads(result$full.path, length(x), length(y))
   matched <- get.matched(result$full.path, x, y)
-  c(result, cum.leads, lead.scores(cum.leads), matched, goodness(matched))
+  extras <- c(result, cum.leads, lead.scores(cum.leads), matched, goodness(matched))
+  attributes(distance) <- extras
+  distance
 }

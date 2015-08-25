@@ -28,7 +28,7 @@ stationary.barycenter.average <- function(sequences, initial = median.series(seq
   iteration <- 0
   
   repeat {
-    paths <- lapply(sequences, function(series) list(series = series, path = tsDistances(average, series, distance = distance, lead.lag.info = TRUE, ...)[["full.path"]]))
+    paths <- lapply(sequences, function(series) list(series = series, path = attr(tsDistances(average, series, distance = distance, lead.lag.info = TRUE, ...), "full.path")))
     
     # each sample on the new average is simply the arithmetic mean of all samples
     # that are "matched" (by time warping) to the sample on the old average with

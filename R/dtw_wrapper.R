@@ -34,7 +34,7 @@ append.path.info <- function(x, y, dtw) {
     }
   }
   full.path <- cbind(x = dtw$index1, y = dtw$index2)
-  augment.results(list(distance = dtw$distance, full.path = full.path, x.leads = x.leads, y.leads = y.leads), x, y)
+  augment.results(dtw$distance, list(full.path = full.path, x.leads = x.leads, y.leads = y.leads), x, y)
 }
 
 #Dynamic time warping distance is calculated by using dtw package
