@@ -12,3 +12,8 @@
                  distance measures for time series.")
 
 }
+
+.onDetach <- function(lib.path)  {
+  if (pr_DB$entry_exists("tsDistances"))
+    pr_DB$delete_entry("tsDistances")
+}
